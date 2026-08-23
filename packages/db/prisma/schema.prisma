@@ -3,6 +3,11 @@
 
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
+enum Role {
+  ADMIN
+  MEMBER
+}
+
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -12,11 +17,107 @@ datasource db {
   provider = "postgresql"
 }
 
-
-model User{
-  id   String   @id @default(uuid())
-  username String @unique
+model User {
+  id       String @id @default(uuid())
+  email    String @unique
   password String
+
+  memberships Membership[]
+  issues      IssuesMapping[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
+model Organization {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
 
+  memberships Membership[]
+  boards      Board[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Membership {
+  id             String @id @default(uuid())
+  userId         String
+  organizationId String
+  role           Role
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, organizationId])
+}
+
+model Board {
+  id             String  @id @default(uuid())
+  name           String
+  description    String?
+  organizationId String
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  sections Section[]
+  issues   Issue[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+}
+
+model Section {
+  id      String @id @default(uuid())
+  title   String
+  order   Int
+  boardId String
+
+  board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  issues Issue[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([boardId])
+}
+
+model Issue {
+  id          String  @id @default(uuid())
+  title       String
+  description String?
+  // Position of the card within its section (same spaced-int strategy as Section.order).
+  order       Int
+  boardId     String
+  sectionId   String
+
+  board   Board   @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  section Section @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  assignees IssuesMapping[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([boardId])
+  @@index([sectionId])
+}
+
+model IssuesMapping {
+  id      String @id @default(uuid())
+  userId  String
+  issueId String
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  issue Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, issueId])
+}
