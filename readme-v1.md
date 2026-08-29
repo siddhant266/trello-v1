@@ -107,3 +107,60 @@ trello-fullstack-v1/
     GET /organizations   
     
 
+## Schema / Database
+
+- Added `Comments` table.
+- Added `OrganizationJoinRequest` table.
+- Added `Role` enum: `ADMIN`, `MEMBER`.
+- Added invitation `RequestStatus`: `PENDING`, `ACCEPTED`, `DECLINED`, `EXPIRED`.
+- Added organization membership relationships.
+- Added indexes and unique constraints.
+- Added `onDelete: Cascade` where required.
+
+## Backend
+
+### Authentication
+- `POST /api/auth/signup`
+- `POST /api/auth/signin`
+- JWT authentication middleware.
+- Added `req.userId` using Express Request type augmentation.
+
+### Organizations
+- `POST /api/organizations`
+- `GET /api/organizations`
+- `DELETE /api/organizations/:organizationId`
+- Organization creator automatically becomes `ADMIN`.
+- Only organization admins can delete organizations.
+
+### Invitations
+- `POST /api/organizations/:organizationId/invitations`
+- `GET /api/organizations/invitations`
+- `PATCH /api/organizations/invitations/:requestId`
+
+Invitation flow:
+
+```text
+Admin invites user
+       ↓
+User exists? ── Yes → userId linked
+       │
+       No
+       ↓
+userId = null
+       ↓
+User signs up
+       ↓
+Pending invitation linked using email
+       ↓
+User accepts
+       ↓
+Membership created
+
+> apps/backend/
+
+├── index.ts
+├── routes/
+├── controllers/
+├── middlewares/
+└── types/
+    └── express.d.ts

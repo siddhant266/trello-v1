@@ -1,13 +1,11 @@
 import type { Request, Response } from "express";
 import { prisma } from "db/client";
 
-type AuthRequest = Request & {
-    userId: string;
-};
+
 
 // CREATE ORGANIZATION
 export const createOrganization = async (
-    req: AuthRequest,
+    req: Request,
     res: Response
 ) => {
     try {
@@ -45,7 +43,7 @@ export const createOrganization = async (
 
 // GET USER'S ORGANIZATIONS
 export const getOrganizations = async (
-    req: AuthRequest,
+    req: Request,
     res: Response
 ) => {
     try {
@@ -80,7 +78,7 @@ export const getOrganizations = async (
 
 // DELETE ORGANIZATION
 export const deleteOrganization = async (
-    req: AuthRequest,
+    req: Request,
     res: Response
 ) => {
     try {

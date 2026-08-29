@@ -30,10 +30,11 @@ export const signupController = async (req: Request, res: Response) => {
         }
 
         const hassedPassword = await bcrypt.hash(password, 10);
+        const normalizedEmail = email.trim().toLowerCase();
 
         const user = await prisma.user.create({
             data: {
-                email,
+                email: normalizedEmail,
                 password: hassedPassword,
 
             },
@@ -42,6 +43,17 @@ export const signupController = async (req: Request, res: Response) => {
                 email: true,
                 password: true,
 
+            },
+        });
+
+        await prisma.organizationJoinRequest.updateMany({
+            where: {
+                email: user.email,
+                userId: null,
+                status: "PENDING",
+            },
+            data: {
+                userId: user.id,
             },
         });
 

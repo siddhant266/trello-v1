@@ -5,7 +5,7 @@ interface JwtPayload {
     userId: string;
 }
 
-export const authmiddleware = (req: Request, res: Response, next: NextFunction) => {
+export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
 
     try {
         const authHeader = req.headers.authorization
@@ -37,11 +37,10 @@ export const authmiddleware = (req: Request, res: Response, next: NextFunction) 
             });
         }
 
-        (req as Request & { userId: string }).userId;
-
+        req.userId = decoded.userId;
         next();
 
-        
+
     } catch (error) {
         return res.status(401).json({
             message: "Invalid or expired token",

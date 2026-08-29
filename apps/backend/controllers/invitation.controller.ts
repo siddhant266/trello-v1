@@ -100,3 +100,139 @@ export const createInvitation = async (
         });
     }
 };
+
+export const getMyInvitations = async (
+    req: Request,
+    res: Response
+) => {
+    try {
+        const invitations = await prisma.organizationJoinRequest.findMany({
+            where: {
+                userId: req.userId,
+                status: "PENDING",
+                expiresAt: {
+                    gt: new Date(),
+                },
+            },
+            include: {
+                organization: {
+                    select: {
+                        id: true,
+                        name: true,
+                        description: true,
+                    },
+                },
+                invitedBy: {
+                    select: {
+                        id: true,
+                        email: true,
+                    },
+                },
+            },
+            orderBy: {
+                createdAt: "desc",
+            },
+        });
+
+        return res.status(200).json({
+            invitations,
+        });
+    } catch (error) {
+        console.error(error);
+
+        return res.status(500).json({
+            message: "Internal server error",
+        });
+    }
+};
+
+export const respondToInvitation = async (
+    req: Request,
+    res: Response
+) => {
+    try {
+        const requestId = req.params.requestId as string;
+        const { action } = req.body;
+
+        if (!requestId) {
+            return res.status(400).json({
+                message: "Request ID is required",
+            });
+        }
+
+        if (action !== "ACCEPT" && action !== "DECLINE") {
+            return res.status(400).json({
+                message: "Action must be ACCEPT or DECLINE",
+            });
+        }
+
+        const invitation =
+            await prisma.organizationJoinRequest.findFirst({
+                where: {
+                    id: requestId,
+                    userId: req.userId,
+                    status: "PENDING",
+                    expiresAt: {
+                        gt: new Date(),
+                    },
+                },
+            });
+
+        if (!invitation) {
+            return res.status(404).json({
+                message: "Invitation not found or expired",
+            });
+        }
+
+        if (action === "DECLINE") {
+            await prisma.organizationJoinRequest.update({
+                where: {
+                    id: requestId,
+                },
+                data: {
+                    status: "DECLINED",
+                },
+            });
+
+            return res.status(200).json({
+                message: "Invitation declined",
+            });
+        }
+
+        const result = await prisma.$transaction(async (tx) => {
+            const membership = await tx.membership.create({
+                data: {
+                    userId: req.userId,
+                    organizationId: invitation.organizationId,
+                    role: invitation.role,
+                },
+            });
+
+            const updatedInvitation =
+                await tx.organizationJoinRequest.update({
+                    where: {
+                        id: requestId,
+                    },
+                    data: {
+                        status: "ACCEPTED",
+                    },
+                });
+
+            return {
+                membership,
+                invitation: updatedInvitation,
+            };
+        });
+
+        return res.status(200).json({
+            message: "Invitation accepted",
+            ...result,
+        });
+    } catch (error) {
+        console.error(error);
+
+        return res.status(500).json({
+            message: "Internal server error",
+        });
+    }
+};
