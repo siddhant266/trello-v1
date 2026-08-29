@@ -70,3 +70,40 @@ trello-fullstack-v1/
 │
 └── packages/
     └── db/
+```
+
+
+
+#  DAY 2
+
+> Schema / Datbase
+
+    - comments new table
+    - pending req new table
+    - add status tp membership table
+    
+> Backend
+    POST /signin
+    POST /signup
+    POST /organization
+    GET /boards
+    POST /board
+    DELETE /board
+    DELETE /organization
+    POST /invite {email: "harkirat@gmail.com", orgId: 1} -- email
+    POST /accept {orgId: 1}
+    PUT POST /section
+    POST /issue
+    GET /sections
+    GET /issues
+    GET /issue/:issueId
+    DELETE /issue/:issueId
+    DELETE /section
+    DELETE /membership -- {userId: 1, orgId: 2}
+    PUT /board
+    PUT /issue
+    POST DELETE PUT /comment
+    PUT /issue/move
+    GET /organizations   
+    
+

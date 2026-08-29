@@ -8,6 +8,13 @@ enum Role {
   MEMBER
 }
 
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -22,8 +29,11 @@ model User {
   email    String @unique
   password String
 
-  memberships Membership[]
-  issues      IssuesMapping[]
+  memberships     Membership[]
+  issues          IssuesMapping[]
+  comments        Comments[]
+  receivedInvites OrganizationJoinRequest[]
+  sentInvites     OrganizationJoinRequest[] @relation("InvitedBy")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -34,8 +44,9 @@ model Organization {
   name        String
   description String?
 
-  memberships Membership[]
-  boards      Board[]
+  memberships  Membership[]
+  boards       Board[]
+  joinRequests OrganizationJoinRequest[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -53,6 +64,27 @@ model Membership {
   createdAt DateTime @default(now())
 
   @@unique([userId, organizationId])
+}
+
+model OrganizationJoinRequest {
+  id             String        @id @default(uuid())
+  email          String
+  userId         String?
+  organizationId String
+  role           Role          @default(MEMBER)
+  invitedById    String
+  status         RequestStatus @default(PENDING)
+  expiresAt      DateTime
+
+  user         User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedBy    User         @relation("InvitedBy", fields: [invitedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([email, organizationId])
+  @@index([email])
 }
 
 model Board {
@@ -101,6 +133,7 @@ model Issue {
   section Section @relation(fields: [sectionId], references: [id], onDelete: Cascade)
 
   assignees IssuesMapping[]
+  comments  Comments[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -120,4 +153,20 @@ model IssuesMapping {
   createdAt DateTime @default(now())
 
   @@unique([userId, issueId])
+}
+
+model Comments {
+  id      String @id @default(uuid())
+  comment String
+  userId  String
+  issueId String
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  issue Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([issueId])
 }
