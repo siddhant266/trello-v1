@@ -11,7 +11,7 @@ const router = Router();
 
 // Get pending invitations for the logged-in user
 router.get(
-    "/invitations",
+    "/invitations/me",
     authMiddleware,
     getMyInvitations
 );

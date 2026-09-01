@@ -41,6 +41,59 @@ export const createOrganization = async (
     }
 };
 
+// GET SINGLE ORGANIZATION
+export const getOrganization = async (
+    req: Request,
+    res: Response
+) => {
+    try {
+        const organizationId = req.params.organizationId as string;
+
+        const membership = await prisma.membership.findFirst({
+            where: {
+                organizationId,
+                userId: req.userId,
+            },
+        });
+
+        if (!membership) {
+            return res.status(403).json({
+                message: "You are not a member of this organization",
+            });
+        }
+
+        const organization = await prisma.organization.findUnique({
+            where: { id: organizationId },
+            include: {
+                memberships: {
+                    include: {
+                        user: {
+                            select: { id: true, email: true },
+                        },
+                    },
+                },
+                boards: {
+                    orderBy: { createdAt: "asc" },
+                },
+            },
+        });
+
+        if (!organization) {
+            return res.status(404).json({
+                message: "Organization not found",
+            });
+        }
+
+        return res.status(200).json({ organization });
+    } catch (error) {
+        console.error(error);
+
+        return res.status(500).json({
+            message: "Internal server error",
+        });
+    }
+};
+
 // GET USER'S ORGANIZATIONS
 export const getOrganizations = async (
     req: Request,

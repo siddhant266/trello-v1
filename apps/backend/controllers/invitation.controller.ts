@@ -236,3 +236,47 @@ export const respondToInvitation = async (
         });
     }
 };
+
+export const getOrganizationInvitations = async (
+    req: Request,
+    res: Response
+) => {
+    try {
+        const { organizationId } = req.params;
+
+        // Must be a member to view invitations
+        const membership = await prisma.membership.findFirst({
+            where: {
+                organizationId,
+                userId: req.userId,
+            },
+        });
+
+        if (!membership) {
+            return res.status(403).json({
+                message: "You are not a member of this organization",
+            });
+        }
+
+        const invitations = await prisma.organizationJoinRequest.findMany({
+            where: { organizationId },
+            include: {
+                invitedBy: {
+                    select: { id: true, email: true },
+                },
+                user: {
+                    select: { id: true, email: true },
+                },
+            },
+            orderBy: { createdAt: "desc" },
+        });
+
+        return res.status(200).json({ invitations });
+    } catch (error) {
+        console.error(error);
+
+        return res.status(500).json({
+            message: "Internal server error",
+        });
+    }
+};

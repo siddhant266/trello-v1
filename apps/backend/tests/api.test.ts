@@ -693,7 +693,7 @@ describe("Trello Backend API", () => {
 
         const response = await request(
             "GET",
-            "/api/invitations",
+            "/api/invitations/me",
             undefined,
             token2
         );
@@ -756,6 +756,186 @@ describe("Trello Backend API", () => {
         );
 
         expect(response.status).toBe(201);
+    });
+
+
+    // -------------------------
+    // 1. GET SINGLE ORGANIZATION
+    // -------------------------
+
+    test("Get Organization by ID", async () => {
+
+        const response = await request(
+            "GET",
+            `/api/organizations/${organizationId}`
+        );
+
+        const data = await response.json() as {
+            organization: { id: string; name: string; memberships: unknown[]; boards: unknown[] }
+        };
+
+        console.log(
+            "Get Organization:",
+            response.status,
+            data
+        );
+
+        expect(response.status).toBe(200);
+        expect(data.organization).toBeDefined();
+        expect(data.organization.id).toBe(organizationId);
+        expect(data.organization.memberships).toBeDefined();
+        expect(data.organization.boards).toBeDefined();
+    });
+
+
+    // -------------------------
+    // 2. GET ORG INVITATIONS (sent by admin)
+    // -------------------------
+
+    test("Get Organization Invitations", async () => {
+
+        const response = await request(
+            "GET",
+            `/api/organizations/${organizationId}/invitations`
+        );
+
+        const data = await response.json() as {
+            invitations: Array<{ id: string; status: string }>
+        };
+
+        console.log(
+            "Get Org Invitations:",
+            response.status,
+            data
+        );
+
+        expect(response.status).toBe(200);
+        expect(data.invitations).toBeDefined();
+        expect(data.invitations.length).toBeGreaterThan(0);
+    });
+
+
+    // -------------------------
+    // 3. DECLINE INVITATION
+    // -------------------------
+
+    test("Send another invitation to decline", async () => {
+
+        // Need a third user to test decline (user2 already accepted)
+        const email3 = `decline${Date.now()}@example.com`;
+
+        // Signup third user
+        await request("POST", "/api/auth/signup", {
+            email: email3,
+            password: "password789",
+        });
+
+        const signinRes = await request("POST", "/api/auth/signin", {
+            email: email3,
+            password: "password789",
+        });
+
+        const { token: token3 } = await signinRes.json() as { token: string };
+
+        // Admin sends invite
+        const inviteRes = await request(
+            "POST",
+            `/api/organizations/${organizationId}/invitations`,
+            { email: email3 }
+        );
+
+        const inviteData = await inviteRes.json() as InvitationResponse;
+
+        console.log(
+            "Send Invitation (to decline):",
+            inviteRes.status,
+            inviteData
+        );
+
+        expect(inviteRes.status).toBe(201);
+
+        const declineId = inviteData.invitation.id;
+
+        // Third user declines
+        const declineRes = await request(
+            "PATCH",
+            `/api/invitations/${declineId}`,
+            { action: "DECLINE" },
+            token3
+        );
+
+        const declineData = await declineRes.json();
+
+        console.log(
+            "Decline Invitation:",
+            declineRes.status,
+            declineData
+        );
+
+        expect(declineRes.status).toBe(200);
+    });
+
+
+    // -------------------------
+    // 4. ASSIGN / UNASSIGN ISSUE
+    // -------------------------
+
+    test("Assign Issue to self", async () => {
+
+        // Create a fresh issue to assign
+        const issueRes = await request(
+            "POST",
+            `/api/boards/${boardId}/sections/${section2Id}/issues`,
+            { title: "Issue to assign" }
+        );
+
+        const issueData = await issueRes.json() as IssueResponse;
+        const assignIssueId = issueData.issue.id;
+
+        // Get current user's userId from members list
+        const membersRes = await request(
+            "GET",
+            `/api/organizations/${organizationId}/members`
+        );
+
+        const membersData = await membersRes.json() as MembersResponse;
+        const myUserId = membersData.members.find(m => m.role === "ADMIN")?.userId ?? "";
+
+        // Assign
+        const assignRes = await request(
+            "POST",
+            `/api/issues/${assignIssueId}/assignees`,
+            { userId: myUserId }
+        );
+
+        const assignData = await assignRes.json();
+
+        console.log(
+            "Assign Issue:",
+            assignRes.status,
+            assignData
+        );
+
+        expect(assignRes.status).toBe(201);
+
+        // Unassign
+        const unassignRes = await request(
+            "DELETE",
+            `/api/issues/${assignIssueId}/assignees/${myUserId}`
+        );
+
+        const unassignData = await unassignRes.json();
+
+        console.log(
+            "Unassign Issue:",
+            unassignRes.status,
+            unassignData
+        );
+
+        expect(unassignRes.status).toBe(200);
+
+        // Cleanup the extra issue
+        await request("DELETE", `/api/issues/${assignIssueId}`);
     });
 
 
