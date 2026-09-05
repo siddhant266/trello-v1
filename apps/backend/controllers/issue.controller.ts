@@ -316,9 +316,9 @@ export const deleteIssue = async (
             },
         });
 
-        if (!membership) {
+        if (!membership || membership.role !== "ADMIN") {
             return res.status(403).json({
-                message: "You are not a member of this organization",
+                message: "Only organization admins can delete issues",
             });
         }
 
@@ -344,17 +344,11 @@ export const moveIssue = async (
 ) => {
     try {
         const { issueId } = req.params;
-        const { sectionId, order } = req.body;
+        const { sectionId, order, comment } = req.body;
 
         if (!sectionId || typeof sectionId !== "string") {
             return res.status(400).json({
                 message: "sectionId is required",
-            });
-        }
-
-        if (order === undefined || typeof order !== "number") {
-            return res.status(400).json({
-                message: "order must be a number",
             });
         }
 
@@ -404,17 +398,49 @@ export const moveIssue = async (
             });
         }
 
-        const updatedIssue = await prisma.issue.update({
-            where: { id: issueId },
-            data: {
-                sectionId,
-                order,
-            },
+        // Compulsory comment if moving to a different section
+        if (issue.sectionId !== sectionId) {
+            if (!comment || typeof comment !== "string" || !comment.trim()) {
+                return res.status(400).json({
+                    message: "A comment is compulsory when moving an issue to another section",
+                });
+            }
+        }
+
+        let nextOrder = order;
+        if (typeof nextOrder !== "number" || nextOrder > 2000000000 || nextOrder < 0) {
+            const lastIssue = await prisma.issue.findFirst({
+                where: { sectionId },
+                orderBy: { order: "desc" },
+            });
+            nextOrder = lastIssue ? lastIssue.order + 1000 : 1000;
+        }
+
+        const result = await prisma.$transaction(async (tx) => {
+            const updatedIssue = await tx.issue.update({
+                where: { id: issueId },
+                data: {
+                    sectionId,
+                    order: nextOrder,
+                },
+            });
+
+            if (comment && comment.trim()) {
+                await tx.comments.create({
+                    data: {
+                        comment: `[Moved to ${targetSection.title}] ${comment.trim()}`,
+                        userId: req.userId,
+                        issueId: issue.id,
+                    },
+                });
+            }
+
+            return updatedIssue;
         });
 
         return res.status(200).json({
             message: "Issue moved successfully",
-            issue: updatedIssue,
+            issue: result,
         });
     } catch (error) {
         console.error(error);

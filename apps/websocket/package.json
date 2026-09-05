@@ -1,0 +1,19 @@
+{
+  "name": "ws",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun --watch index.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/ws": "^8.5.14"
+  },
+  "peerDependencies": {
+    "typescript": "^7"
+  },
+  "dependencies": {
+    "ws": "^8.18.3"
+  }
+}

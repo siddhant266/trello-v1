@@ -1,12 +1,11 @@
 import { Router } from "express";
-
 import {
     createBoard,
+    deleteBoard,
+    getBoard,
     getBoards,
     updateBoard,
-    deleteBoard,
 } from "../controllers/board.controller";
-
 import { authMiddleware } from "../middleware/auth.middleware";
 
 const router = Router();
@@ -21,6 +20,12 @@ router.get(
     "/organizations/:organizationId/boards",
     authMiddleware,
     getBoards
+);
+
+router.get(
+    "/boards/:boardId",
+    authMiddleware,
+    getBoard
 );
 
 router.put(

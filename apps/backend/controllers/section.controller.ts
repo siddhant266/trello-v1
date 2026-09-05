@@ -1,10 +1,7 @@
 import type { Request, Response } from "express";
 import { prisma } from "db/client";
 
-export const createSection = async (
-    req: Request,
-    res: Response
-) => {
+export const createSection = async (req: Request, res: Response) => {
     try {
         const { boardId } = req.params;
         const { title } = req.body;
@@ -16,15 +13,11 @@ export const createSection = async (
         }
 
         const board = await prisma.board.findUnique({
-            where: {
-                id: boardId as string,
-            },
+            where: { id: boardId as string },
         });
 
         if (!board) {
-            return res.status(404).json({
-                message: "Board not found",
-            });
+            return res.status(404).json({ message: "Board not found" });
         }
 
         const membership = await prisma.membership.findFirst({
@@ -34,19 +27,15 @@ export const createSection = async (
             },
         });
 
-        if (!membership) {
+        if (!membership || membership.role !== "ADMIN") {
             return res.status(403).json({
-                message: "You are not a member of this organization",
+                message: "Only organization admins can create sections",
             });
         }
 
         const lastSection = await prisma.section.findFirst({
-            where: {
-                boardId: board.id,
-            },
-            orderBy: {
-                order: "desc",
-            },
+            where: { boardId: board.id },
+            orderBy: { order: "desc" },
         });
 
         const order = lastSection ? lastSection.order + 1000 : 1000;
@@ -65,30 +54,20 @@ export const createSection = async (
         });
     } catch (error) {
         console.error(error);
-
-        return res.status(500).json({
-            message: "Internal server error",
-        });
+        return res.status(500).json({ message: "Internal server error" });
     }
 };
 
-export const getSections = async (
-    req: Request,
-    res: Response
-) => {
+export const getSections = async (req: Request, res: Response) => {
     try {
         const { boardId } = req.params;
 
         const board = await prisma.board.findUnique({
-            where: {
-                id: boardId as string,
-            },
+            where: { id: boardId as string },
         });
 
         if (!board) {
-            return res.status(404).json({
-                message: "Board not found",
-            });
+            return res.status(404).json({ message: "Board not found" });
         }
 
         const membership = await prisma.membership.findFirst({
@@ -105,30 +84,18 @@ export const getSections = async (
         }
 
         const sections = await prisma.section.findMany({
-            where: {
-                boardId: board.id,
-            },
-            orderBy: {
-                order: "asc",
-            },
+            where: { boardId: board.id },
+            orderBy: { order: "asc" },
         });
 
-        return res.status(200).json({
-            sections,
-        });
+        return res.status(200).json({ sections });
     } catch (error) {
         console.error(error);
-
-        return res.status(500).json({
-            message: "Internal server error",
-        });
+        return res.status(500).json({ message: "Internal server error" });
     }
 };
 
-export const updateSection = async (
-    req: Request,
-    res: Response
-) => {
+export const updateSection = async (req: Request, res: Response) => {
     try {
         const { sectionId } = req.params;
         const { title } = req.body;
@@ -144,9 +111,7 @@ export const updateSection = async (
         });
 
         if (!section) {
-            return res.status(404).json({
-                message: "Section not found",
-            });
+            return res.status(404).json({ message: "Section not found" });
         }
 
         const board = await prisma.board.findUnique({
@@ -154,9 +119,7 @@ export const updateSection = async (
         });
 
         if (!board) {
-            return res.status(404).json({
-                message: "Board not found",
-            });
+            return res.status(404).json({ message: "Board not found" });
         }
 
         const membership = await prisma.membership.findFirst({
@@ -166,9 +129,9 @@ export const updateSection = async (
             },
         });
 
-        if (!membership) {
+        if (!membership || membership.role !== "ADMIN") {
             return res.status(403).json({
-                message: "You are not a member of this organization",
+                message: "Only organization admins can update sections",
             });
         }
 
@@ -183,17 +146,11 @@ export const updateSection = async (
         });
     } catch (error) {
         console.error(error);
-
-        return res.status(500).json({
-            message: "Internal server error",
-        });
+        return res.status(500).json({ message: "Internal server error" });
     }
 };
 
-export const deleteSection = async (
-    req: Request,
-    res: Response
-) => {
+export const deleteSection = async (req: Request, res: Response) => {
     try {
         const { sectionId } = req.params;
 
@@ -202,9 +159,7 @@ export const deleteSection = async (
         });
 
         if (!section) {
-            return res.status(404).json({
-                message: "Section not found",
-            });
+            return res.status(404).json({ message: "Section not found" });
         }
 
         const board = await prisma.board.findUnique({
@@ -212,9 +167,7 @@ export const deleteSection = async (
         });
 
         if (!board) {
-            return res.status(404).json({
-                message: "Board not found",
-            });
+            return res.status(404).json({ message: "Board not found" });
         }
 
         const membership = await prisma.membership.findFirst({
@@ -224,9 +177,9 @@ export const deleteSection = async (
             },
         });
 
-        if (!membership) {
+        if (!membership || membership.role !== "ADMIN") {
             return res.status(403).json({
-                message: "You are not a member of this organization",
+                message: "Only organization admins can delete sections",
             });
         }
 
@@ -239,9 +192,6 @@ export const deleteSection = async (
         });
     } catch (error) {
         console.error(error);
-
-        return res.status(500).json({
-            message: "Internal server error",
-        });
+        return res.status(500).json({ message: "Internal server error" });
     }
 };

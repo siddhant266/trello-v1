@@ -1,159 +1,81 @@
-# Turborepo starter
+﻿# Trello Fullstack — V1
 
-This Turborepo starter is maintained by the Turborepo core team.
+A fullstack collaborative project management application built with a Bun-powered Turborepo monorepo, Express REST API, Prisma with Neon PostgreSQL, real-time WebSocket presence server, and a minimalist black-and-white React frontend.
 
-## Using this example
+> Detailed day-by-day learning logs and design decisions are maintained in [**`readme-v1.md`**](./readme-v1.md).
 
-Run the following command:
+---
 
-```sh
-npx create-turbo@latest
+## ??? Architecture & Monorepo Structure
+
+```text
+trello-fullstack-v1/
++-- apps/
+¦   +-- frontend/     # React 19 + TypeScript + Vite + React Router v7 (Port 5173)
+¦   +-- backend/      # Express 5 REST API + JWT + Prisma (Port 3000)
+¦   +-- websocket/    # Standalone WebSocket server for presence (Port 3002)
++-- packages/
+    +-- db/           # Prisma client and PostgreSQL schema (Neon serverless)
+    +-- ui/           # Shared UI stub components
+    +-- eslint-config/# ESLint presets
+    +-- typescript-config/ # Monorepo tsconfigs
 ```
 
-## What's inside?
+---
 
-This Turborepo includes the following packages/apps:
+## ? Features
 
-### Apps and Packages
+- **Real-Time Presence**:
+  - WebSocket-powered active member avatars with initials.
+  - Multi-tab presence deduplication (opening multiple tabs as the same user shows only 1 avatar).
+- **Role-Based Access Control**:
+  - **Admin**: Create/delete boards, create/delete sections, delete issues, invite members.
+  - **Member**: Create issues, post comments, move issues with compulsory comments.
+- **Compulsory Move Comments**:
+  - Moving an issue across sections strictly requires a comment explaining the move, providing an automatic audit trail.
+- **Minimalist Aesthetic**:
+  - Dark monochrome palette (`#0a0a0a`, `#111`, `#2a2a2a`) with monospace typography.
+  - Zero bloated component libraries; responsive and fast.
+- **Duplicate Prevention**:
+  - Loading states on comment submissions to prevent accidental duplicate posts.
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+---
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+## ?? Quick Start
 
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo build
+### 1. Install Dependencies
+```bash
+bun install
 ```
 
-Without global `turbo`, use your package manager:
+### 2. Setup Database & Seed Data
+```bash
+# Push Prisma schema to Neon PostgreSQL
+bun --filter db prisma db push
 
-```sh
-cd my-turborepo
-npx turbo build
-bun dlx turbo build
-bun exec turbo build
+# Seed initial organization (Project Alpha), 4 boards, sections, and 8 users
+bun run packages/db/seed.ts
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+### 3. Run Development Servers
+```bash
+# Terminal 1 — Backend API (port 3000)
+cd apps/backend && bun --watch index.ts
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+# Terminal 2 — WebSocket Server (port 3002)
+cd apps/websocket && bun --watch index.ts
 
-```sh
-turbo build --filter=docs
+# Terminal 3 — Frontend UI (port 5173)
+cd apps/frontend && bun run dev
 ```
 
-Without global `turbo`:
+Visit **`http://localhost:5173`** in your browser.
 
-```sh
-npx turbo build --filter=docs
-bun exec turbo build --filter=docs
-bun exec turbo build --filter=docs
-```
+---
 
-### Develop
+## ?? Seeded Test Accounts
 
-To develop all apps and packages, run the following command:
+**Password for all accounts:** `password123`
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo dev
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo dev
-bun exec turbo dev
-bun exec turbo dev
-```
-
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo dev --filter=web
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo dev --filter=web
-bun exec turbo dev --filter=web
-bun exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo login
-bun exec turbo login
-bun exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-bun exec turbo link
-bun exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+- **Admin:** `alice@dev.com` (`@alice`)
+- **Members:** `bob@dev.com`, `charlie@dev.com`, `dan@dev.com`, `emma@dev.com`, `frank@dev.com`, `grace@dev.com`, `henry@dev.com`
